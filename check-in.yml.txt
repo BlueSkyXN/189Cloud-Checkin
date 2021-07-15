@@ -1,0 +1,60 @@
+name: Cloud189Checkin
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: 0 2,14 * * *
+
+jobs:
+  check-in:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Python
+      run: |
+        sudo apt update && \
+        sudo apt install python3
+      
+    - name: requirements
+      run: |
+        pip3 install -r requirements.txt
+        
+    - name: Checkin
+      run: |
+        user='${{ secrets.USER }}'
+        pwd='${{ secrets.PWD }}'
+        
+        user_list=()
+        pwd_list=()
+
+        IFS=","
+
+        for u in ${user[*]}
+        do
+        user_list[${#user_list[*]}]=${u}
+        done
+
+        for p in ${pwd[*]}
+        do
+        pwd_list[${#pwd_list[*]}]=${p}
+        done
+
+        user_num=${#user_list[*]}
+        pwd_num=${#pwd_list[*]}
+
+        if [ $user_num != $pwd_num ];then
+        echo "账号和密码个数不对应"
+        exit 1
+        else
+        echo "共有 $user_num 个账号，即将开始签到"
+        fi
+
+        for ((i=0;i<$user_num;i++))
+        do
+        python3 checkin.py --username ${user_list[$i]} --password ${pwd_list[$i]}
+        done
