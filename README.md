@@ -10,3 +10,6 @@
 修改为tg逐条推送，推送配置需要修改文件，账号密码用外置命令
 ## 189Checkin.py
 TG整合推送精简版，推送配置和账号密码都在文件内
+
+# 备份地址
+https://gitlab.com/BlueSkyXN/189Cloud-Checkin
