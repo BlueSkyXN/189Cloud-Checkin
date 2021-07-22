@@ -7,14 +7,15 @@ import hashlib
 
 tianyi_session = requests.Session()
 
-username = "tel"
-password = "pwd"
+username = "【username】"
+password = "【password】"
 result = '🏆天翼云盘签到姬\n'
 
 def pushMessage(data):
     requests.post(
-        'https://api.telegram.org/xxx/sendMessage?chat_id=123456&text='+data)
-
+        'https://api.telegram.org/【BOTAPI】/sendMessage?chat_id=【TGID】&text='+data)
+# 【BOTAPI】格式为bot123456:abcdefghi
+# 【TGID】格式为123456（人）或者-100123456（群组/频道）
 
 if (username == "" or password == ""):
     username = input("账号：")
