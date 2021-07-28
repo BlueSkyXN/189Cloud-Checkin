@@ -9,7 +9,7 @@ tianyi_session = requests.Session()
 
 username = "【username】"
 password = "【password】"
-result = '🏆天翼云盘签到姬\n'
+result = '🏆天翼云盘签到姬🏆\n'
 
 def pushMessage(data):
     requests.post(
