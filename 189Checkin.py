@@ -7,15 +7,18 @@ import hashlib
 
 tianyi_session = requests.Session()
 
-username = "【username】"
-password = "【password】"
 result = '🏆天翼云盘签到姬🏆\n'
+username = os.environ.get("username")
+password = os.environ.get("password")
+TGBOTAPI = os.environ.get("TGBOTAPI")
+TGID = os.environ.get("TGID")
 
-def pushMessage(data):
-    requests.post(
-        'https://api.telegram.org/【BOTAPI】/sendMessage?chat_id=【TGID】&text='+data)
-# 【BOTAPI】格式为bot123456:abcdefghi
+# 【TGBOTAPI】格式为bot123456:abcdefghi
 # 【TGID】格式为123456（人）或者-100123456（群组/频道）
+
+def pushtg(data):
+    requests.post(
+        'https://api.telegram.org/bot{TGBOTAPI}/sendMessage?chat_id={TGID}&text='+data)
 
 if (username == "" or password == ""):
     username = input("账号：")
@@ -37,7 +40,7 @@ def main():
         checkin()
         lottery(1)
         lottery(2)
-        pushMessage(result)
+        pushtg(result)
 
 
 # 签到
@@ -170,4 +173,6 @@ def login(username, password):
 
 
 if __name__ == "__main__":
+    main()
+def main_handler(event, context):
     main()
