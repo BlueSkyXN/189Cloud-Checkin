@@ -7,29 +7,22 @@ import hashlib
 
 tianyi_session = requests.Session()
 
-
-result = '🏆天翼云盘签到姬\n'
-username = os.environ.get("username")
-password = os.environ.get("password")
-TGBOTAPI = os.environ.get("TGBOTAPI")
-TGID = os.environ.get("TGID")
-# 【TGBOTAPI】格式为bot123456:abcdefghi
-# 【TGID】格式为123456（人）或者-100123456（群组/频道）
+username = "username"
+password = "password"
+result = '🏆天翼云盘签到姬🏆\n'
 
 def pushtg(data):
     requests.post(
-        'https://api.telegram.org/bot{TGBOTAPI}/sendMessage?chat_id={TGID}&text='+data)
-
+        'https://api.telegram.org/bot1254867296:AAHhyvWI07iNJmc4W36nr_r7M8iumLVuTnM/sendMessage?chat_id=1316858741&text='+data)
+# 【BOTAPI】格式为bot123456:abcdefghi
+# 【TGID】格式为123456（人）或者-100123456（群组/频道）
 
 if (username == "" or password == ""):
     username = input("账号：")
     password = input("密码：")
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Linux; Android 5.1.1; SM-G930K Build/NRD90M; wv) 
-	AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.136 Mobile 
-	Safari/537.36 Ecloud/8.6.3 Android/22 clientId/355325117317828 clientModel/SM-G930K 
-	imsi/460071114317824 clientChannelId/qq proVersion/1.0.6',
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 5.1.1; SM-G930K Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/74.0.3729.136 Mobile Safari/537.36 Ecloud/8.6.3 Android/22 clientId/355325117317828 clientModel/SM-G930K imsi/460071114317824 clientChannelId/qq proVersion/1.0.6',
     "Referer": "https://m.cloud.189.cn/zhuanti/2016/sign/index.jsp?albumBackupOpened=1",
     "Host": "m.cloud.189.cn",
     "Accept-Encoding": "gzip, deflate",
@@ -49,9 +42,7 @@ def main():
 def checkin():
     global result
     rand = str(round(time.time() * 1000))
-    url = 
-	f'https://api.cloud.189.cn/mkt/userSign.action?rand={rand}&clientType=TELEANDROID&ver
-	sion=8.6.3&model=SM-G930K'
+    url = f'https://api.cloud.189.cn/mkt/userSign.action?rand={rand}&clientType=TELEANDROID&version=8.6.3&model=SM-G930K'
     response = tianyi_session.get(url, headers=headers)
     netdiskBonus = response.json()['netdiskBonus']
     try:
@@ -68,13 +59,9 @@ def lottery(few):
     global result
     url = ''
     if few == 1:
-        url = 
-		'https://m.cloud.189.cn/v2/drawPrizeMarketDetails.action?taskId=TASK_SIGNIN&activ
-		ityId=ACT_SIGNIN'
+        url = 'https://m.cloud.189.cn/v2/drawPrizeMarketDetails.action?taskId=TASK_SIGNIN&activityId=ACT_SIGNIN'
     if few == 2:
-        url = 
-		'https://m.cloud.189.cn/v2/drawPrizeMarketDetails.action?taskId=TASK_SIGNIN_PHOTO
-		S&activityId=ACT_SIGNIN'
+        url = 'https://m.cloud.189.cn/v2/drawPrizeMarketDetails.action?taskId=TASK_SIGNIN_PHOTOS&activityId=ACT_SIGNIN'
     response = tianyi_session.get(url, headers=headers)
     if "errorCode" in response.text:
         if response.json()['errorCode'] == "User_Not_Chance":
@@ -139,9 +126,7 @@ def calculate_md5_sign(params):
 
 def login(username, password):
     global result
-    url = 
-	"https://cloud.189.cn/api/portal/loginUrl.action?redirectURL=https://cloud.189.cn/web
-	/redirect.html"
+    url = "https://cloud.189.cn/api/portal/loginUrl.action?redirectURL=https://cloud.189.cn/web/redirect.html"
     r = tianyi_session.get(url)
     captchaToken = re.findall(r"captchaToken' value='(.+?)'", r.text)[0]
     lt = re.findall(r'lt = "(.+?)"', r.text)[0]
@@ -154,8 +139,7 @@ def login(username, password):
     password = rsa_encode(j_rsakey, password)
     url = "https://open.e.189.cn/api/logbox/oauth2/loginSubmit.do"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 
-		Firefox/76.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/76.0',
         'Referer': 'https://open.e.189.cn/',
     }
     data = {
