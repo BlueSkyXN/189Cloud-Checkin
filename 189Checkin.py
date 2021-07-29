@@ -4,17 +4,33 @@ import re
 import rsa
 import base64
 import hashlib
+import os
+import sys
+
+sys.path.append('.')
+requests.packages.urllib3.disable_warnings()
+try:
+    from pusher import pusher
+except:
+    pass
+from urllib import parse
+
+username = os.environ.get("username")
+password = os.environ.get("password")
+TGBOTAPI = os.environ.get("TGBOTAPI")
+TGID = os.environ.get("TGID")
 
 tianyi_session = requests.Session()
 
-username = "username"
-password = "password"
 result = '🏆天翼云盘签到姬🏆\n'
 
 def pushtg(data):
+    global TGBOTAPI
+    global TGID
     requests.post(
-        'https://api.telegram.org/bot1254867296:AAHhyvWI07iNJmc4W36nr_r7M8iumLVuTnM/sendMessage?chat_id=1316858741&text='+data)
-# 【BOTAPI】格式为bot123456:abcdefghi
+        'https://api.telegram.org/bot'+TGBOTAPI+'/sendMessage?chat_id='+TGID+'&text='+data)
+
+# 【BOTAPI】格式为123456:abcdefghi
 # 【TGID】格式为123456（人）或者-100123456（群组/频道）
 
 if (username == "" or password == ""):
