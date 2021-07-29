@@ -1,5 +1,13 @@
 # 189Cloud-Checkin
 中国电信 189 天翼 云盘 网盘 签到 以及推送至TG（Telegram）
+# 新版说明
+需要的文件只有189Checkin.py一个,其他不要用
+
+依赖包请用项目 https://github.com/BlueSkyXN/requirements-serverless
+
+需要填写的参数有 username,password,TGBOTAPI,TGID
+
+
 # 说明
 天翼云盘自动签到 189checkin 服务器部署教程 https://www.blueskyxn.com/202107/4758.html
 
