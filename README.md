@@ -7,6 +7,8 @@
 
 需要填写的参数有 username,password,TGBOTAPI,TGID
 
+可在云函数环境变量中填写,也可以直接改文件(记得加引号,单双应该都行)
+
 
 # 说明
 天翼云盘自动签到 189checkin 服务器部署教程 https://www.blueskyxn.com/202107/4758.html
