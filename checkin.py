@@ -9,7 +9,7 @@ import rsa
 
 class CheckIn(object):
     client = requests.Session()
-    login_url = "https://cloud.189.cn/udb/udb_login.jsp?pageId=1&redirectURL=/main.actio"
+    login_url = "https://cloud.189.cn/api/portal/loginUrl.action?redirectURL=https://cloud.189.cn/web/redirect.html"
     submit_login_url = "https://open.e.189.cn/api/logbox/oauth2/loginSubmit.do"
     sign_url = ("https://api.cloud.189.cn/mkt/userSign.action?rand=%s"
                 "&clientType=TELEANDROID&version=8.6.3&model=SM-G930K")
