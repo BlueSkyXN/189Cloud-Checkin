@@ -156,7 +156,9 @@ TIMEOUT = (10, 15)
 
 
 class LoginError(Exception):
-    pass
+    def __init__(self, message, reason_code="unknown"):
+        super().__init__(message)
+        self.reason_code = reason_code
 
 
 def response_json(response, stage):
@@ -174,7 +176,7 @@ def response_json(response, stage):
 def login(username, password):
     """PC 密码登录；只返回已验证存在 SessionKey 的会话，失败抛出异常。"""
     if not username or not password:
-        raise LoginError("账号或密码为空")
+        raise LoginError("账号或密码为空", "invalid_configuration")
     s = requests.Session()
     s.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
@@ -216,8 +218,13 @@ def login(username, password):
         r = s.post(AUTH_URL + "/api/logbox/oauth2/needcaptcha.do", headers=auth_headers,
                    data={"appKey": APP_ID, "accountType": "02", "userName": encrypted_user},
                    timeout=TIMEOUT)
-        if r.status_code != 200 or r.text.strip() != "0":
-            raise LoginError("需要验证码或验证码检查异常；停止自动密码登录")
+        if r.status_code != 200:
+            raise LoginError("验证码检查：HTTP {}".format(r.status_code))
+        captcha = r.text.strip()
+        if captcha == "1":
+            raise LoginError("需要验证码；停止自动密码登录", "captcha_required")
+        if captcha != "0":
+            raise LoginError("验证码检查返回未知结果；停止自动密码登录")
 
         stage = "密码登录"
         r = s.post(AUTH_URL + "/api/logbox/oauth2/loginSubmit.do", headers=auth_headers, data={
@@ -228,13 +235,21 @@ def login(username, password):
             "returnUrl": RETURN_URL, "paramId": fields["paramId"],
         }, timeout=TIMEOUT)
         data = response_json(r, stage)
-        if data.get("result") not in (0, "0") or not data.get("toUrl"):
+        code = data.get("result")
+        if not (type(code) is int or isinstance(code, str) and re.fullmatch(r"-?[0-9]+", code)):
+            raise LoginError("密码登录响应缺少有效结果码")
+        code = int(code)
+        if code == -133:
+            raise LoginError("需要设备二次验证；停止自动密码登录", "device_verification_required")
+        if code != 0:
             # 不输出可能含票据的完整响应或请求 URL。
             message = str(data.get("msg", "未知错误"))
             for value in (str(username), str(password)):
                 message = message.replace(value, "[REDACTED]")
             message = re.sub(r"https?://\S+", "[URL]", message)
-            raise LoginError("密码登录被拒绝（{}）：{}".format(data.get("result"), message[:180]))
+            raise LoginError("密码登录被拒绝（{}）：{}".format(code, message[:180]), "login_rejected")
+        if not isinstance(data.get("toUrl"), str) or not data["toUrl"]:
+            raise LoginError("密码登录响应缺少有效 toUrl")
 
         stage = "换取 PC 会话"
         r = s.post(API_URL + "/getSessionForPC.action", params={
@@ -280,7 +295,12 @@ def user_sign(s):
                      headers={"Referer": WEB_URL + "/web/main/"}, timeout=TIMEOUT)
     print_response(response, "签到")
     data = response_json(response, "签到")
-    if data.get("errorCode") or "netdiskBonus" not in data or "isSign" not in data:
+    error_code = data.get("errorCode")
+    if error_code is not None and type(error_code) not in (str, int):
+        raise LoginError("签到响应包含无效错误码")
+    if error_code not in (None, 0, "0", ""):
+        raise LoginError("签到接口返回业务错误", "sign_rejected")
+    if "netdiskBonus" not in data or "isSign" not in data:
         raise LoginError("签到响应缺少有效业务结果")
     state = data["isSign"]
     if state is not False and state is not True and state not in ("false", "true"):
@@ -290,7 +310,8 @@ def user_sign(s):
 
 def do_checkin(s, username):
     """仅执行个人签到，返回可独立汇总的账号结果。"""
-    result = {"username": username, "signin": "", "status": "failed", "error": None}
+    result = {"username": username, "signin": "", "status": "failed", "error": None,
+              "reason_code": "unknown"}
     try:
         data = user_sign(s)
         if data["isSign"] is False or data["isSign"] == "false":
@@ -299,8 +320,10 @@ def do_checkin(s, username):
         else:
             result["status"] = "already_signed"
             result["signin"] = "今日已签到，本次未重复领取"
+        result["reason_code"] = result["status"]
     except Exception as exc:
         result["error"] = "签到失败或结果未知：{}".format(error_text(exc))
+        result["reason_code"] = exc.reason_code if isinstance(exc, LoginError) else "unknown"
     return result
 
 
@@ -314,7 +337,8 @@ def process_account(account, index, total):
         result = do_checkin(s, masked)
     except Exception as exc:
         result = {"username": masked, "signin": "", "status": "failed",
-                  "error": "登录失败：{}".format(error_text(exc))}
+                  "error": "登录失败：{}".format(error_text(exc)),
+                  "reason_code": exc.reason_code if isinstance(exc, LoginError) else "unknown"}
     finally:
         if s is not None:
             s.close()
@@ -371,11 +395,22 @@ def main():
 
 
 def main_handler(event, context):
-    # 正常返回表示执行完成；业务结果和通知结果分别在 body 中报告。
+    """返回兼容的 statusCode/body 信封，业务结果与通知结果分别报告。
+
+    results 的 status 和 counts 保持 signed/already_signed/failed 三类。
+    新增 reason_code：signed、already_signed 表示有效签到结果；
+    captcha_required、device_verification_required 表示需要人工认证；
+    login_rejected、sign_rejected 表示接口明确拒绝，不等于密码失效；
+    unknown 表示网络异常、无效响应或没有可靠业务证据，不应自动重跑。
+    配置错误在 body 顶层返回 reason_code=invalid_configuration。
+    counts.failed 仍包含需要认证和结果未知项；调用方不能仅凭 failed
+    判定远端业务失败，也不能通过 error 中文文本或通知结果推断业务状态。
+    """
     try:
         result = main()
     except ValueError as exc:
-        result = {"ok": False, "config_error": str(exc), "notification": "not_attempted"}
+        result = {"ok": False, "config_error": str(exc), "notification": "not_attempted",
+                  "reason_code": "invalid_configuration"}
         print(result["config_error"])
     return {"statusCode": 200, "body": json.dumps(result, ensure_ascii=False)}
 
